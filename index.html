@@ -1,0 +1,237 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>C0 by wangfakang</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">C0</h1>
+        <p class="header">一些关于ｃ的陷阱（Some of the pitfalls）</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/c0/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/c0/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/wangfakang/c0">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/wangfakang">wangfakang</a></p>
+
+
+      </header>
+      <section>
+        <p><code>c陷阱(不要只看静态的代码，执行过后你会崩溃的)</code>  </p>
+
+<p>　　这篇文章是与c相关的第一篇文章，之所以要放在第一篇－－或许你看看标题应该明白了我的意思了，在我们以后写c的过程中
+不要让子在奔溃，起码在这一点上，好了，下面就转正文吧：<br>
+　　来看看下面几行简单的c代码：<br>
+　　
+　##　test1.c:     </p>
+
+<div class="highlight highlight-source-c"><pre>　　
+  <span class="pl-c1">1</span> #include &lt;stdio.h&gt;
+  <span class="pl-c1">2</span> 
+  <span class="pl-c1">3</span> <span class="pl-k">int</span> <span class="pl-en">main</span>()
+  4 {
+  <span class="pl-c1">5</span>     <span class="pl-k">const</span> <span class="pl-k">int</span> a = <span class="pl-c1">10</span>;
+  <span class="pl-c1">6</span>     <span class="pl-c">//int g[a];</span>
+  <span class="pl-c1">7</span>     <span class="pl-k">int</span> *p = (<span class="pl-k">int</span>*) &amp;a;
+  <span class="pl-c1">8</span>     *p = <span class="pl-c1">100</span>;
+  <span class="pl-c1">9</span>     <span class="pl-k">int</span> b = a;
+ <span class="pl-c1">10</span> 
+ <span class="pl-c1">11</span>     <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%d</span><span class="pl-cce">\t</span><span class="pl-c1">%d</span><span class="pl-cce">\t</span><span class="pl-c1">%d</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,　a,　*p,　b);
+ <span class="pl-c1">12</span> 
+ <span class="pl-c1">13</span>     <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+ <span class="pl-c1">14</span> 
+ <span class="pl-c1">15</span> }</pre></div>
+
+<p>想想输出结果是什么？<br>
+看到这估计你应该有自己的结果了．<br>
+我使用的gcc版本是：<br>
+gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04)<br>
+当我执行:<br>
+gcc test1.c 时生成a.out　执行./a.out<br>
+结果是：<br>
+100   100   100   </p>
+
+<p>当我执行:<br>
+gcc -O2 test1.c 时生成a.out　执行./a.out<br>
+结果是：<br>
+100   100   10    </p>
+
+<p>这个时候肯定有人要问这是怎么回事恩？　为何输出的b是10而不是100？   </p>
+
+<p>搞清楚这个问题首先我们看点其他的知识点：    </p>
+
+<p>一．编译优化，由于默认状态下gcc　使用的优化级别是O1，其中优化级别排序是：<br>
+O0 --&gt;&gt; O1 --&gt;&gt; O2 --&gt;&gt; O3<br>
+-O0表示没有优化,-O1为缺省值，-O3优化级别最高   </p>
+
+<p>二．计算机寻址的方式   </p>
+
+<ul>
+<li>立即数寻址<br>
+</li>
+</ul>
+
+<ul>
+<li><p>寄存器寻址  </p></li>
+<li><p>存储器寻址   </p></li>
+</ul>
+
+<p>然后再来看看这几个问题：<br>
+刚才默认状态下输出都是100，当提高了优化级别的时候最后b是10.其实当提高了编译优化参数的时候
+此时编译器对其＂const int a = 10;＂做了优化，由于是const修饰了变量a，所以最终寻址a的时候
+就是用立即数寻址方式．此时语句＂*p = 100;＂虽然把变量a中的内存修改了但是下面语句＂int b = a;
+被编译器优化了，此时使用的立即数的方式，不会再从内存中读取变量ａ．   </p>
+
+<p>注意：<br>
+当我们在使用＂volatile＂关键字的时候，此时结果又会不一样的．volatile告诉编译器每次访问的时候必须
+去从内存中去读取．   </p>
+
+<p>下面再看看二者在汇编上的差异：   </p>
+
+<p>优化前：   </p>
+
+<div class="highlight highlight-source-c"><pre> <span class="pl-c1">10</span>         .cfi_startproc
+ <span class="pl-c1">11</span>         pushq   %rbp
+ <span class="pl-c1">12</span>         .cfi_def_cfa_offset <span class="pl-c1">16</span>
+ <span class="pl-c1">13</span>         .cfi_offset <span class="pl-c1">6</span>, -<span class="pl-c1">16</span>
+ <span class="pl-c1">14</span>         movq    %rsp, %rbp
+ <span class="pl-c1">15</span>         .cfi_def_cfa_register <span class="pl-c1">6</span>
+ <span class="pl-c1">16</span>         subq    $<span class="pl-c1">16</span>, %rsp
+ <span class="pl-c1">17</span>         movl    $<span class="pl-c1">10</span>, -<span class="pl-c1">16</span>(%rbp)
+ <span class="pl-c1">18</span>         leaq    -<span class="pl-c1">16</span>(%rbp), %rax
+ <span class="pl-c1">19</span>         movq    %rax, -<span class="pl-c1">8</span>(%rbp)
+ <span class="pl-c1">20</span>         movq    -<span class="pl-c1">8</span>(%rbp), %rax
+ <span class="pl-c1">21</span>         movl    $<span class="pl-c1">100</span>, (%rax)
+ <span class="pl-c1">22</span>         movl    -<span class="pl-c1">16</span>(%rbp), %eax
+ <span class="pl-c1">23</span>         movl    %eax, -<span class="pl-c1">12</span>(%rbp)
+ <span class="pl-c1">24</span>         movq    -<span class="pl-c1">8</span>(%rbp), %rax
+ <span class="pl-c1">25</span>         <span class="pl-en">movl</span>    (%rax), %edx
+ 26         movl    -16(%rbp), %eax
+ 27         movl    -12(%rbp), %ecx
+ 28         movl    %eax, %esi
+ 29         movl    $.LC0, %edi
+ 30         movl    $0, %eax
+ 31         call    printf
+ 32         movl    $0, %eax
+ 33         leave
+ 34         .cfi_def_cfa 7, 8
+ 35         ret
+ 36         .cfi_endproc</pre></div>
+
+<p>优化后：   </p>
+
+<div class="highlight highlight-source-c"><pre> <span class="pl-c1">11</span>         .cfi_startproc
+ <span class="pl-c1">12</span>         subq    $<span class="pl-c1">8</span>, %rsp
+ <span class="pl-c1">13</span>         .cfi_def_cfa_offset <span class="pl-c1">16</span>
+ <span class="pl-c1">14</span>         movl    $<span class="pl-c1">10</span>, %r8d
+ <span class="pl-c1">15</span>         movl    $<span class="pl-c1">100</span>, %ecx
+ <span class="pl-c1">16</span>         movl    $<span class="pl-c1">100</span>, %edx
+ <span class="pl-c1">17</span>         movl    $.LC0, %esi
+ <span class="pl-c1">18</span>         movl    $<span class="pl-c1">1</span>, %edi
+ <span class="pl-c1">19</span>         xorl    %eax, %eax
+ <span class="pl-c1">20</span>         call    __printf_chk
+ <span class="pl-c1">21</span>         xorl    %eax, %eax
+ <span class="pl-c1">22</span>         addq    $<span class="pl-c1">8</span>, %rsp
+ <span class="pl-c1">23</span>         .cfi_def_cfa_offset <span class="pl-c1">8</span>
+ <span class="pl-c1">24</span>         ret
+ <span class="pl-c1">25</span>         .cfi_endproc</pre></div>
+
+<p>所以在写代码地的时候一定要想清楚了在写．   </p>
+
+<p>下面在看一个列子：<br>
+test2.c   </p>
+
+<div class="highlight highlight-source-c"><pre>  <span class="pl-c1">1</span> 
+  <span class="pl-c1">2</span> #include&lt;stdio.h&gt;
+  <span class="pl-c1">3</span> 
+  <span class="pl-c1">4</span> 
+  <span class="pl-c1">5</span> <span class="pl-k">int</span>  <span class="pl-en">main</span>()
+  6 {
+  <span class="pl-c1">7</span>     <span class="pl-k">int</span> a=<span class="pl-c1">12</span>;
+  <span class="pl-c1">8</span>     <span class="pl-k">float</span> b = <span class="pl-c1">12.99</span>;
+  <span class="pl-c1">9</span>     <span class="pl-k">float</span> c = <span class="pl-c1">12.25</span>;
+ <span class="pl-c1">10</span> 
+ <span class="pl-c1">11</span> 
+ <span class="pl-c1">12</span>     <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%d</span><span class="pl-cce">\t</span><span class="pl-c1">%d</span><span class="pl-cce">\t</span><span class="pl-c1">%f</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,a, b, c);
+ <span class="pl-c1">13</span> 
+ <span class="pl-c1">14</span>     <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+ <span class="pl-c1">15</span> }</pre></div>
+
+<p>看清楚printf函数中给的格式符号：有人可能会说b是12 c是12.25.<br>
+其实并不是这样的．   </p>
+
+<p>所以最基础printf函数的实现原理你知道嘛？<br>
+在这个过程中其实是这样的参数cba从右边依次压栈，然后看到"%d"格式符则取出四字节，<br>
+看大%f按照８字节来做解析(在printf函数中float型都会转化为double来处理所以８bit).    </p>
+
+<p>test3.c    </p>
+
+<p>i++ 与　++i的区别：<br>
+最基本的都知道．但是真正的区别又是什么恩？<br>
+i++ = 3;//编译不通过<br>
+++i = 4;　  </p>
+
+<p>第一种为啥编译不通过恩，其实i++底层是这样做的，i++会生成中间一个临时常量<br>
+此行相当于向常量赋值．   </p>
+
+<p>基于此类别其实还有很多，其实有时候很简单的一句代码，但是底层却有很多好玩的．    </p>
+
+<h1>
+<a id="欢迎一起交流学习-" class="anchor" href="#%E6%AC%A2%E8%BF%8E%E4%B8%80%E8%B5%B7%E4%BA%A4%E6%B5%81%E5%AD%A6%E4%B9%A0-" aria-hidden="true"><span class="octicon octicon-link"></span></a>欢迎一起交流学习 </h1>
+
+<p>在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流</p>
+
+<ul>
+<li>邮件(1031379296#qq.com, 把#换成@)</li>
+<li>QQ: 1031379296</li>
+<li>weibo: <a href="http://weibo.com/u/2786211992/home">@王发康</a>
+</li>
+</ul>
+
+<h1>
+<a id="thx" class="anchor" href="#thx" aria-hidden="true"><span class="octicon octicon-link"></span></a>Thx</h1>
+
+<ul>
+<li>chunshengsterATgmail.com</li>
+</ul>
+
+<h1>
+<a id="author" class="anchor" href="#author" aria-hidden="true"><span class="octicon octicon-link"></span></a>Author</h1>
+
+<ul>
+<li>Linux\nginx\golang\c\c++爱好者</li>
+<li>欢迎一起交流  一起学习# </li>
+<li>Others say good and Others good</li>
+</ul>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		          <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("一些关于ｃ的陷阱（Some of the pitfalls）");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
