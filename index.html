@@ -187,6 +187,26 @@ i++ = 3;//编译不通过<br>
 <p>第一种为啥编译不通过恩，其实i++底层是这样做的，i++会生成中间一个临时常量<br>
 此行相当于向常量赋值．   </p>
 
+<p>test4.c</p>
+
+<div class="highlight highlight-source-c"><pre>  <span class="pl-c1">1</span> 
+  <span class="pl-c1">2</span> #include &lt;stdio.h&gt;
+  <span class="pl-c1">3</span> 
+  <span class="pl-c1">4</span> <span class="pl-k">int</span> <span class="pl-en">main</span>()
+  5 {
+  <span class="pl-c1">6</span>     <span class="pl-k">unsigned</span> <span class="pl-k">int</span> a = <span class="pl-c1">1</span>;
+  <span class="pl-c1">7</span>     <span class="pl-k">short</span> b = -<span class="pl-c1">1</span>;
+  <span class="pl-c1">8</span>     <span class="pl-c1">printf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%c</span><span class="pl-cce">\n</span><span class="pl-pds">"</span></span>,a &gt; b ? <span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>:<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>);
+  <span class="pl-c1">9</span>     
+ <span class="pl-c1">10</span>     <span class="pl-k">return</span> <span class="pl-c1">0</span>;
+ <span class="pl-c1">11</span> }</pre></div>
+
+<p>代码逻辑很简单，但是输出的值你可以看看是a or b;　结果是ｂ．<br>
+原因原因也很简单，在这里a和b进行关系运算的时候，由于b是有<br>
+符号的，a是无符号的，此时有符号会向无符号转换．-1最高为是１<br>
+了，所以会很大．规则：短字节转化为长字节时有符号位的用符号<br>
+位填充．    </p>
+
 <p>基于此类别其实还有很多，其实有时候很简单的一句代码，但是底层却有很多好玩的．    </p>
 
 <h1>
